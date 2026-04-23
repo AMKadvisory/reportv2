@@ -6,6 +6,9 @@
     <title>Dashboard - AMK Valuation Portal</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
+        body { visibility: hidden; }
+    </style>
+    <style>
         .welcome-banner { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%); border-radius: var(--radius-lg); padding: 2rem 2.5rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; }
         .welcome-text h2 { font-family: var(--font-display); font-size: 1.8rem; color: var(--gold); margin-bottom: 4px; }
         .welcome-text p { color: var(--gray-400); font-size: 0.9rem; }
@@ -224,7 +227,9 @@ const sectionFilters = { vehicle: 'all', cbplc: 'all', 'ebl-sme-land': 'all', pr
 
 async function init() {
     const user = await Auth.requireAuth();
-    if (!user) return;
+    if (!user) return; // already redirecting, don't show anything
+    document.body.style.visibility = 'visible';
+    
     currentUserId = user.id;
     document.getElementById('user-name').textContent = user.full_name || user.email;
     document.getElementById('banner-name').textContent = (user.full_name || user.email).split(' ')[0];
