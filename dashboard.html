@@ -196,6 +196,13 @@
 <div id="toast-container"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
+<script>
+    // Instant auth check — runs before page renders
+    const _db = new PocketBase('http://127.0.0.1:8090');
+    if (!_db.authStore.isValid) {
+        window.location.replace('index.html');
+    }
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="config.js"></script>
 <script src="auth.js"></script>
