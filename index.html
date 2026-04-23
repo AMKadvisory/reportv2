@@ -163,7 +163,7 @@ async function handleLogin() {
 
     btn.disabled = true; btn.textContent = 'Signing in...'; showOverlay();
     try {
-        await db.collection('profiles').authWithPassword(email, password);
+        await db.collection('users').authWithPassword(email, password);
         window.location.href = 'dashboard.html';
     } catch (err) {
         hideOverlay();
@@ -186,7 +186,7 @@ async function handleRegister() {
 
     btn.disabled = true; btn.textContent = 'Creating account...'; showOverlay();
     try {
-        await db.collection('profiles').create({
+        await db.collection('users').create({
             email,
             password,
             passwordConfirm: password,
