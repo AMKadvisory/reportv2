@@ -219,11 +219,10 @@ async function init() {
     const user = await Auth.requireAuth();
     if (!user) return;
     currentUserId = user.id;
-    const profile = await Auth.getProfile(user.id);
-    document.getElementById('user-name').textContent = profile.full_name || profile.email;
-    document.getElementById('banner-name').textContent = (profile.full_name || profile.email).split(' ')[0];
-    document.getElementById('avatar-initial').textContent = (profile.full_name || profile.email)[0].toUpperCase();
-    if (profile.role === 'admin') document.getElementById('admin-link').style.display = 'inline-flex';
+    document.getElementById('user-name').textContent = user.full_name || user.email;
+    document.getElementById('banner-name').textContent = (user.full_name || user.email).split(' ')[0];
+    document.getElementById('avatar-initial').textContent = (user.full_name || user.email)[0].toUpperCase();
+    if (user.role === 'admin') document.getElementById('admin-link').style.display = 'inline-flex';
     await loadSubmissions();
 }
 
