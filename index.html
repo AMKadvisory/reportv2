@@ -123,16 +123,17 @@
 
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
 <script>
-    // Instant check — if already logged in, skip login page
-    const _db = new PocketBase('http://127.0.0.1:8090');
-    if (_db.authStore.isValid) {
-        window.location.replace('dashboard.html');
-    }
+// ── INSTANT AUTH CHECK (runs before page paints) ─────────────
+const db = new PocketBase('http://127.0.0.1:8090');
+if (db.authStore.isValid) {
+    // Already logged in — go to dashboard immediately, never show login page
+    window.location.replace('dashboard.html');
+} else {
+    // Not logged in — show the page
+    document.body.style.visibility = 'visible';
+}
 </script>
 <script>
-const POCKETBASE_URL = 'http://127.0.0.1:8090';
-const db = new PocketBase(POCKETBASE_URL);
-
 function showOverlay()  { document.getElementById('loading-overlay').style.display = 'flex'; }
 function hideOverlay()  { document.getElementById('loading-overlay').style.display = 'none'; }
 
@@ -160,20 +161,17 @@ function switchTab(tab) {
     document.getElementById('panel-register').classList.toggle('active', tab === 'register');
 }
 
-// ── LOGIN ────────────────────────────────────────────────────
 async function handleLogin() {
     clearErrors();
     const email    = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const btn      = document.getElementById('login-btn');
-
     if (!email)    { showErr('login-email-err', 'Email is required.'); return; }
     if (!password) { showErr('login-pass-err',  'Password is required.'); return; }
-
     btn.disabled = true; btn.textContent = 'Signing in...'; showOverlay();
     try {
         await db.collection('users').authWithPassword(email, password);
-        window.location.href = 'dashboard.html';
+        window.location.replace('dashboard.html');
     } catch (err) {
         hideOverlay();
         showErr('login-err', 'Invalid email or password.');
@@ -181,26 +179,20 @@ async function handleLogin() {
     }
 }
 
-// ── REGISTER ─────────────────────────────────────────────────
 async function handleRegister() {
     clearErrors();
     const name     = document.getElementById('reg-name').value.trim();
     const email    = document.getElementById('reg-email').value.trim();
     const password = document.getElementById('reg-password').value;
     const btn      = document.getElementById('register-btn');
-
     if (!name)               { showErr('reg-name-err',  'Name is required.'); return; }
     if (!email)              { showErr('reg-email-err', 'Email is required.'); return; }
     if (password.length < 8) { showErr('reg-pass-err',  'Password must be at least 8 characters.'); return; }
-
     btn.disabled = true; btn.textContent = 'Creating account...'; showOverlay();
     try {
         await db.collection('users').create({
-            email,
-            password,
-            passwordConfirm: password,
-            full_name: name,
-            role: 'user'
+            email, password, passwordConfirm: password,
+            full_name: name, role: 'user'
         });
         hideOverlay();
         document.getElementById('reg-success').style.display = 'block';
@@ -213,16 +205,6 @@ async function handleRegister() {
     }
 }
 
-// ── REDIRECT IF ALREADY LOGGED IN ────────────────────────────
-window.addEventListener('load', function() {
-    if (db.authStore.isValid) {
-        window.location.replace('dashboard.html');
-    } else {
-        document.body.style.visibility = 'visible';
-    }
-});
-
-// ── ENTER KEY SUPPORT ────────────────────────────────────────
 document.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
     if (document.getElementById('panel-login').classList.contains('active')) handleLogin();
