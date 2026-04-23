@@ -119,7 +119,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.0/dist/pocketbase.umd.js"></script>
-
+<script>
+    // Instant check — if already logged in, skip login page
+    const _db = new PocketBase('http://127.0.0.1:8090');
+    if (_db.authStore.isValid) {
+        window.location.replace('dashboard.html');
+    }
+</script>
 <script>
 const POCKETBASE_URL = 'http://127.0.0.1:8090';
 const db = new PocketBase(POCKETBASE_URL);
