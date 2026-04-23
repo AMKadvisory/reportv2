@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EBL SME Land Form – AMK Portal</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { background: var(--gray-100); }
+
+        .form-topbar {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 0.75rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 64px;
+            z-index: 50;
+        }
+
+        .form-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 0;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .sidebar-fixed {
+            position: sticky;
+            top: 113px;
+            height: calc(100vh - 113px);
+            overflow-y: auto;
+            background: var(--white);
+            border-right: 1px solid var(--gray-200);
+            padding: 1.5rem 0;
+        }
+
+        .form-main { padding: 2rem; min-height: calc(100vh - 113px); }
+
+        .section-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.65rem 1.5rem;
+            font-size: 0.845rem;
+            color: var(--gray-600);
+            cursor: pointer;
+            transition: all var(--transition);
+            border-left: 3px solid transparent;
+            font-family: var(--font-body);
+        }
+        .section-nav-item:hover { background: var(--gray-100); color: var(--navy); }
+        .section-nav-item.active {
+            background: rgba(201,168,76,0.08);
+            color: var(--navy);
+            border-left-color: var(--gold);
+            font-weight: 600;
+        }
+
+        .report-section { display: none; animation: fadeIn 0.2s ease; }
+        .report-section.active { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+        .section-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--gray-200);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-heading {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--gray-100);
+        }
+
+        .form-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+        .form-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; }
+
+        @media(max-width:900px) {
+            .form-layout { grid-template-columns: 1fr; }
+            .sidebar-fixed { position: static; height: auto; }
+            .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
+        }
+
+        .save-indicator { font-size: 0.8rem; color: var(--gray-400); display: flex; align-items: center; gap: 6px; }
+        .save-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gray-400); }
+        .save-dot.saved  { background: var(--success); }
+        .save-dot.saving { background: var(--gold); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.4;} }
+
+        .nav-section-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--gray-400);
+            padding: 1rem 1.5rem 0.4rem;
+        }
+
+        /* Valuation summary highlight box */
+        .valuation-highlight {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .val-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 0.5rem; }
+        .val-row:last-child { margin-bottom: 0; }
+        .vh-label { font-size: 0.72rem; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .vh-input {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            border-radius: var(--radius-sm);
+            padding: 0.4rem 0.6rem;
+            width: 100%;
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+            outline: none;
+        }
+        .vh-input[readonly] { color: var(--gold); cursor: default; }
+        .vh-input::placeholder { color: rgba(255,255,255,0.3); }
+
+        /* Dynamic floor table */
+        .floor-table-wrapper { overflow-x: auto; margin-bottom: 1rem; }
+        .floor-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .floor-table th, .floor-table td {
+            border: 1px solid var(--gray-200);
+            padding: 0.4rem 0.5rem;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .floor-table th { background: var(--navy); color: var(--gold); font-weight: 600; white-space: nowrap; }
+        .floor-table td:first-child { text-align: left; font-weight: 600; background: var(--gray-100); }
+        .floor-table input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-family: var(--font-body);
+            font-size: 0.82rem;
+            outline: none;
+            padding: 2px;
+        }
+        .floor-table input:focus { background: rgba(201,168,76,0.08); border-radius: 3px; }
+        .floor-table td:first-child input { text-align: left; }
+
+        .address-box { border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 1rem; background: var(--gray-100); }
+        .address-box h3 { font-family: var(--font-display); font-size: 1rem; color: var(--navy); margin-bottom: 0.5rem; }
+        .address-box p  { font-size: 0.85rem; color: var(--gray-600); line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+    <div class="navbar-brand">AMK <span>Advisory</span></div>
+    <div class="navbar-right">
+        <span class="save-indicator">
+            <span class="save-dot" id="save-dot"></span>
+            <span id="save-status">Not saved</span>
+        </span>
+        <a href="dashboard.html" class="btn btn-outline btn-sm">Dashboard</a>
+        <button class="btn btn-outline btn-sm" onclick="Auth.logout()">Sign Out</button>
+    </div>
+</nav>
+
+<!-- TOPBAR -->
+<div class="form-topbar">
+    <div style="display:flex;align-items:center;gap:16px;">
+        <strong style="font-family:var(--font-display);font-size:1.1rem;" id="form-title">New Property Valuation Report</strong>
+        <span id="status-indicator" class="status-badge" style="display:none;"></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-outline btn-sm" onclick="saveDraft()">Save Draft</button>
+        <button class="btn btn-primary btn-sm"  onclick="submitReport()">Submit Report</button>
+    </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="form-layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar-fixed">
+        <div class="nav-section-label">Cover</div>
+        <div class="section-nav-item active" onclick="showSection('sec-cover',this)"><span>📋</span> Cover Page</div>
+        <div class="section-nav-item"        onclick="showSection('sec-letter',this)"><span>✉️</span> Cover Letter</div>
+
+        <div class="nav-section-label">Property Details</div>
+        <div class="section-nav-item" onclick="showSection('sec-ab',this)"><span>🏢</span> A. Account &amp; B. Owner</div>
+        <div class="section-nav-item" onclick="showSection('sec-cd',this)"><span>📜</span> C. Schedule &amp; D. ID</div>
+        <div class="section-nav-item" onclick="showSection('sec-e',this)"><span>🏗️</span> E. Other Features</div>
+
+        <div class="nav-section-label">Documents</div>
+        <div class="section-nav-item" onclick="showSection('sec-photos',this)"><span>📷</span> Annexures (Documents)</div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="form-main">
+
+        <!-- ═══ SHEET 1: COVER ═══ -->
+        <div class="report-section active" id="sec-cover">
+            <div class="section-card">
+                <div class="section-heading">📋 Cover Page</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Reference Account Name</label>
+                        <input type="text" class="form-control" data-field="reference_account_name" placeholder="Enter reference account name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reference No.</label>
+                        <input type="text" class="form-control" data-field="reference_no" placeholder="Enter reference number">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">W/O Received Date</label>
+                        <input type="date" class="form-control" data-field="wo_received_date">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date of Inspection</label>
+                        <input type="date" class="form-control" data-field="date_of_inspection">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Surveyor Name</label>
+                        <select class="form-control" data-field="surveyor_name" id="surveyor-select" onchange="autoFillSurveyor()">
+                            <option value="">Select Surveyor</option>
+                            <option value="Engr. Abdullah Al Rafi" data-desig="Executive, ISV" data-nid="332 778 6442" data-contact="+880 1847-188078">Engr. Abdullah Al Rafi</option>
+                            <option value="Md Towhid Islam"        data-desig="Senior Officer, ISV"      data-nid="600 509 8812" data-contact="+880 1726-966387">Md Towhid Islam</option>
+                            <option value="Alif Ahmed Chowdhury"   data-desig="Assistant Executive, ISV" data-nid="736 299 6725" data-contact="+880 1847-188079">Alif Ahmed Chowdhury</option>
+                            <option value="MD Junaid Hasan"        data-desig="Officer, ISV"             data-nid="826 528 3591" data-contact="+880 1756-736743">MD Junaid Hasan</option>
+                            <option value="Utsha Kar Orka"         data-desig="Senior Officer, ISV"      data-nid="601 365 5151" data-contact="+880 1760-178876">Utsha Kar Orka</option>
+                            <option value="Sazzadur Rahman"        data-desig="Senior Officer, ISV"      data-nid="916 276 6894" data-contact="+880 1758-551583">Sazzadur Rahman</option>
+                            <option value="Shahriar Alam"          data-desig="Officer, ISV"             data-nid="286 029 1620" data-contact="+880 1568-788506">Shahriar Alam</option>
+                            <option value="Md Mesbah Uddin"        data-desig="Manager, ISV"             data-nid="599 537 0177" data-contact="01830-005171">Md Mesbah Uddin</option>
+                            <option value="Md. Sahed Alam"         data-desig="Senior Officer, ISV"      data-nid="287 252 2319" data-contact="017488-62821">Md. Sahed Alam</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Designation</label>
+                        <input type="text" class="form-control" data-field="surveyor_designation" id="sur-designation" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">NID Number</label>
+                        <input type="text" class="form-control" data-field="surveyor_nid" id="sur-nid" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contact Number</label>
+                        <input type="text" class="form-control" data-field="surveyor_contact" id="sur-contact" readonly>
+                    </div>
+                </div>
+
+                <div class="form-row" style="margin-top:1rem;">
+                    <div class="address-box">
+                        <h3>Submitted by:</h3>
+                        <p><strong>AMK Associates Limited</strong><br>
+                        68, Khilgaon Chowdhurypara (4th floor)<br>
+                        DIT Road, Rampura, Dhaka-1219<br>
+                        E-mail: amkassociatesbd@gmail.com<br>
+                        Website: www.amkassociatesltd.com<br>
+                        Contact: +88 01841-132714</p>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label">Recipient Name</label>
+                            <input type="text" class="form-control" data-field="recipient_name" placeholder="Recipient Name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Recipient Address</label>
+                            <textarea class="form-control" data-field="recipient_address" rows="5" placeholder="Designation&#10;Bank Name&#10;Address Line 1&#10;Address Line 2&#10;Contact Info"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ SHEET 2: COVER LETTER ═══ -->
+        <div class="report-section" id="sec-letter">
+            <div class="section-card">
+                <div class="section-heading">✉️ Cover Letter</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Letter Reference</label>
+                        <input type="text" class="form-control" data-field="letter_ref" placeholder="e.g. AMK/EBPLC/2025/...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Letter Date</label>
+                        <input type="date" class="form-control" data-field="letter_date">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Communication Medium</label>
+                        <input type="text" class="form-control" data-field="comm_medium" placeholder="e.g. email, letter">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Communication Date</label>
+                        <input type="date" class="form-control" data-field="comm_date">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Communication Person</label>
+                    <input type="text" class="form-control" data-field="comm_person">
+                </div>
+
+                <!-- Valuation Table Inputs -->
+                <div class="section-heading" style="margin-top:1.5rem;font-size:1.1rem;">Valuation Summary Table</div>
+                <div class="valuation-highlight">
+                    <!-- Row 1: Present Market Value -->
+                    <p style="color:var(--gray-400);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.5rem;">Present Market Value</p>
+                    <div class="val-row">
+                        <div><div class="vh-label">Land Area (Decimal)</div><input type="number" step="any" class="vh-input" data-field="market_land_area" placeholder="0.00" oninput="calculateValuation()"></div>
+                        <div><div class="vh-label">Rate / Decimal (BDT)</div><input type="text" class="vh-input" data-field="market_rate" placeholder="0" oninput="fmtAndCalc(this)"></div>
+                        <div><div class="vh-label">Total Land Value (BDT)</div><input type="text" class="vh-input" data-field="market_land_val" readonly></div>
+                        <div></div>
+                    </div>
+                    <!-- Row 2: Forced (auto) -->
+                    <p style="color:var(--gray-400);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.5rem;margin-top:0.75rem;">Forced Sale Value (20% less — auto)</p>
+                    <div class="val-row">
+                        <div><div class="vh-label">Land Area</div><input type="text" class="vh-input" data-field="forced_land_area" readonly></div>
+                        <div><div class="vh-label">Rate</div><input type="text" class="vh-input" data-field="forced_rate" readonly></div>
+                        <div><div class="vh-label">Total Land Value</div><input type="text" class="vh-input" data-field="forced_land_val" readonly></div>
+                        <div></div>
+                    </div>
+                    <!-- Row 3: Mouza -->
+                    <p style="color:var(--gray-400);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.5rem;margin-top:0.75rem;">Mouza Value</p>
+                    <div class="val-row">
+                        <div><div class="vh-label">Land Area (Decimal)</div><input type="number" class="vh-input" data-field="mouza_land_area" readonly></div>
+                        <div><div class="vh-label">Rate / Decimal (BDT)</div><input type="text" class="vh-input" data-field="mouza_rate" placeholder="0" oninput="fmtAndCalc(this)"></div>
+                        <div><div class="vh-label">Total Land Value (BDT)</div><input type="text" class="vh-input" data-field="mouza_land_val" readonly></div>
+                    </div>
+                </div>
+
+                <!-- Valuer signatures -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Reporter</label>
+                        <select class="form-control" data-field="valuer_1_name" id="valuer1-select" onchange="autoFillValuer(1)">
+                            <option value="">Select Reporter</option>
+                            <option value="Engr. Abdullah Al Rafi" data-desig="Executive, ISV">Engr. Abdullah Al Rafi</option>
+                            <option value="Md Towhid Islam"        data-desig="Senior Officer, ISV">Md Towhid Islam</option>
+                            <option value="Alif Ahmed Chowdhury"   data-desig="Assistant Executive, ISV">Alif Ahmed Chowdhury</option>
+                            <option value="MD Junaid Hasan"        data-desig="Officer, ISV">MD Junaid Hasan</option>
+                            <option value="Utsha Kar Ork"          data-desig="Sr. Officer, ISV">Utsha Kar Ork</option>
+                            <option value="Sazzadur Rahman"        data-desig="Senior Officer, ISV">Sazzadur Rahman</option>
+                            <option value="Shahriar Alam"          data-desig="Officer, ISV">Shahriar Alam</option>
+                            <option value="Md Mesbah Uddin"        data-desig="Manager, ISV">Md Mesbah Uddin</option>
+                            <option value="Md. Sahed Alam"         data-desig="Sr. Officer, ISV">Md. Sahed Alam</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reporter Designation</label>
+                        <input type="text" class="form-control" data-field="valuer_1_designation" id="valuer1-desig" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Reviewer</label>
+                        <select class="form-control" data-field="valuer_2_name" id="valuer2-select" onchange="autoFillValuer(2)">
+                            <option value="">Select Reviewer</option>
+                            <option value="Engr. Abdullah Al Rafi" data-desig="Executive, ISV">Engr. Abdullah Al Rafi</option>
+                            <option value="Md Towhid Islam"        data-desig="Senior Officer, ISV">Md Towhid Islam</option>
+                            <option value="Alif Ahmed Chowdhury"   data-desig="Assistant Executive, ISV">Alif Ahmed Chowdhury</option>
+                            <option value="MD Junaid Hasan"        data-desig="Officer, ISV">MD Junaid Hasan</option>
+                            <option value="Utsha Kar Ork"          data-desig="Sr. Officer, ISV">Utsha Kar Ork</option>
+                            <option value="Sazzadur Rahman"        data-desig="Senior Officer, ISV">Sazzadur Rahman</option>
+                            <option value="Shahriar Alam"          data-desig="Officer, ISV">Shahriar Alam</option>
+                            <option value="Md Mesbah Uddin"        data-desig="Manager, ISV">Md Mesbah Uddin</option>
+                            <option value="Md. Sahed Alam"         data-desig="Sr. Officer, ISV">Md. Sahed Alam</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reviewer Designation</label>
+                        <input type="text" class="form-control" data-field="valuer_2_designation" id="valuer2-desig" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ SHEET 3: A & B ═══ -->
+        <div class="report-section" id="sec-ab">
+            <div class="section-card">
+                <div class="section-heading">🏢 A. Particulars of Account</div>
+                <div class="form-group"><label class="form-label">A/C Name</label><input type="text" class="form-control" data-field="ac_name"></div>
+                <div class="form-group"><label class="form-label">Office/Business Address</label><textarea class="form-control" data-field="office_address" rows="2"></textarea></div>
+                <div class="form-group"><label class="form-label">Factory Address</label><textarea class="form-control" data-field="factory_address" rows="2"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Nature of Business</label><input type="text" class="form-control" data-field="nature_of_business"></div>
+                    <div class="form-group"><label class="form-label">Age of Business</label><input type="text" class="form-control" data-field="age_of_business"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Organization Type</label><input type="text" class="form-control" data-field="organization_type"></div>
+                    <div class="form-group"><label class="form-label">Contact Person Name</label><input type="text" class="form-control" data-field="contact_person_name"></div>
+                </div>
+                <div class="form-group" style="max-width:50%;"><label class="form-label">Mobile Number of Contact person</label><input type="text" class="form-control" data-field="mobile_number"></div>
+            </div>
+            <div class="section-card">
+                <div class="section-heading">👤 B. Particulars of Property Owner</div>
+                <div class="form-group"><label class="form-label">Property Owner(s) Name</label><input type="text" class="form-control" data-field="owner_name"></div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Father's Name</label><input type="text" class="form-control" data-field="owner_father"></div>
+                    <div class="form-group"><label class="form-label">Mother's Name</label><input type="text" class="form-control" data-field="owner_mother"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Present Address</label><textarea class="form-control" data-field="owner_present_address" rows="2"></textarea></div>
+                <div class="form-group"><label class="form-label">Permanent Address</label><textarea class="form-control" data-field="owner_perm_address" rows="2"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Contact Number</label><input type="text" class="form-control" data-field="owner_contact"></div>
+                    <div class="form-group"><label class="form-label">NID Number</label><input type="text" class="form-control" data-field="owner_nid"></div>
+                </div>
+                <div class="form-group" style="max-width:50%;"><label class="form-label">Relationship with Borrower</label><input type="text" class="form-control" data-field="owner_relationship"></div>
+            </div>
+        </div>
+
+        <!-- ═══ SHEET 4: C & D ═══ -->
+        <div class="report-section" id="sec-cd">
+            <div class="section-card">
+                <div class="section-heading">📜 C. Schedule of Property</div>
+                <div class="form-row"><div class="form-group"><label class="form-label">District</label><input type="text" class="form-control" data-field="district"></div><div class="form-group"><label class="form-label">Thana / Upazila</label><input type="text" class="form-control" data-field="thana_upazila"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Mouza</label><input type="text" class="form-control" data-field="mouza"></div><div class="form-group"><label class="form-label">JL No.</label><input type="text" class="form-control" data-field="jl_no"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Local Authority</label><input type="text" class="form-control" data-field="local_authority"></div><div class="form-group"><label class="form-label">Land Office</label><input type="text" class="form-control" data-field="land_office"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Sub-Register Office</label><input type="text" class="form-control" data-field="sub_register_office"></div><div class="form-group"><label class="form-label">Khatian No.</label><input type="text" class="form-control" data-field="khatian_no"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Corresponding Dag No.</label><input type="text" class="form-control" data-field="dag_no"></div><div class="form-group"><label class="form-label">Deed Number &amp; Date</label><input type="text" class="form-control" data-field="deed_number_date"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Mutation Khatian No.</label><input type="text" class="form-control" data-field="mutation_khatian_no"></div><div class="form-group"><label class="form-label">Jote No.</label><input type="text" class="form-control" data-field="jote_no"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">DCR No.</label><input type="text" class="form-control" data-field="dcr_no"></div><div class="form-group"><label class="form-label">GRR No.</label><input type="text" class="form-control" data-field="grr_no"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Land Type (LDTR)</label><input type="text" class="form-control" data-field="land_type_ldtr"></div><div class="form-group"><label class="form-label">Last Ownership Transfer</label><input type="text" class="form-control" data-field="last_ownership_transfer"></div></div>
+                <div class="form-group"><label class="form-label">Property Address</label><textarea class="form-control" data-field="property_address" rows="2"></textarea></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Total Area (Deed)</label><input type="text" class="form-control" data-field="total_area_deed"></div><div class="form-group"><label class="form-label">Total Area (Physical)</label><input type="text" class="form-control" data-field="total_area_physical"></div></div>
+                <div class="form-group"><label class="form-label">Way to Visit Property</label><textarea class="form-control" data-field="way_to_visit" rows="2"></textarea></div>
+            </div>
+            <div class="section-card">
+                <div class="section-heading">🧭 D. Property Identification</div>
+                <div class="floor-table-wrapper">
+                    <table class="floor-table">
+                        <thead><tr><th>Direction</th><th>Chowhoddi as Per Deed</th><th>Present Chowhoddi</th><th>Demarcation</th><th>Access Road</th></tr></thead>
+                        <tbody>
+                            <tr><td>North</td><td><textarea class="form-control" data-field="north_deed" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="north_present" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="north_demar" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="north_road" rows="2" style="min-height:unset;resize:vertical;"></textarea></td></tr>
+                            <tr><td>South</td><td><textarea class="form-control" data-field="south_deed" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="south_present" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="south_demar" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="south_road" rows="2" style="min-height:unset;resize:vertical;"></textarea></td></tr>
+                            <tr><td>East</td><td><textarea class="form-control" data-field="east_deed" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="east_present" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="east_demar" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="east_road" rows="2" style="min-height:unset;resize:vertical;"></textarea></td></tr>
+                            <tr><td>West</td><td><textarea class="form-control" data-field="west_deed" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="west_present" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="west_demar" rows="2" style="min-height:unset;resize:vertical;"></textarea></td><td><textarea class="form-control" data-field="west_road" rows="2" style="min-height:unset;resize:vertical;"></textarea></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ SHEET 5: E ═══ -->
+        <div class="report-section" id="sec-e">
+            <div class="section-card">
+                <div class="section-heading">🏗️ E. Other Features of Property</div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Electricity</label><input type="text" class="form-control" data-field="electricity"></div><div class="form-group"><label class="form-label">GAS</label><input type="text" class="form-control" data-field="gas"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Water Supply</label><input type="text" class="form-control" data-field="water_supply"></div><div class="form-group"><label class="form-label">Sewerage System</label><input type="text" class="form-control" data-field="sewerage"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Internet</label><input type="text" class="form-control" data-field="internet"></div><div class="form-group"><label class="form-label">Satellite / Google Location</label><input type="text" class="form-control" data-field="satellite_location"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Status of Access Road</label><input type="text" class="form-control" data-field="access_road_status"></div><div class="form-group"><label class="form-label">Nature of Land</label><input type="text" class="form-control" data-field="nature_of_land"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Type of Land</label><input type="text" class="form-control" data-field="type_of_land"></div><div class="form-group"><label class="form-label">Plot Location</label><input type="text" class="form-control" data-field="plot_location"></div></div>
+                <div class="form-group"><label class="form-label">Description of Property</label><textarea class="form-control" data-field="description_of_property" rows="2"></textarea></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Usage Restriction</label><input type="text" class="form-control" data-field="usage_restriction"></div><div class="form-group"><label class="form-label">Flood Possibility</label><input type="text" class="form-control" data-field="flood_possibility"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Classification of Land</label><input type="text" class="form-control" data-field="land_classification"></div><div class="form-group"><label class="form-label">Status in Master Plan</label><input type="text" class="form-control" data-field="status_master_plan"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Current Possession</label><input type="text" class="form-control" data-field="current_possession"></div><div class="form-group"><label class="form-label">Annual Income from Property</label><input type="text" class="form-control" data-field="annual_income"></div></div>
+                <div class="form-group"><label class="form-label">Public Establishments Nearby</label><textarea class="form-control" data-field="public_establishments" rows="2"></textarea></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Distance to Prominent Location</label><input type="text" class="form-control" data-field="dist_prominent"></div><div class="form-group"><label class="form-label">Distance to Main Road</label><input type="text" class="form-control" data-field="dist_main_road"></div></div>
+                <div class="form-row"><div class="form-group"><label class="form-label">Distance to Branch/Office</label><input type="text" class="form-control" data-field="dist_branch_office"></div><div class="form-group"><label class="form-label">Present Use of Property</label><input type="text" class="form-control" data-field="present_use"></div></div>
+                <div class="form-group"><label class="form-label">Future Prospect</label><textarea class="form-control" data-field="future_prospect" rows="2"></textarea></div>
+            </div>
+            <div class="section-card">
+                <div class="section-heading">💬 F. Price Reference:</div>
+                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Maximum Price (BDT)</label><input type="text" class="form-control" data-field="max_price"></div>
+                    <div class="form-group"><label class="form-label">Minimum Price (BDT)</label><input type="text" class="form-control" data-field="min_price"></div>
+                </div>
+                <div class="form-group"><label class="form-label">Last Buy-Sell Record</label><textarea class="form-control" data-field="last_buy_sell" rows="3"></textarea></div>
+                <div class="form-group"><label class="form-label">Recent Valuation in that area</label><textarea class="form-control" data-field="recent_valuation" rows="3"></textarea></div>
+                <div class="form-group"><label class="form-label">Price Justification</label><textarea class="form-control" data-field="price_justification" rows="4"></textarea></div>
+            </div>
+        </div>
+
+        <!-- ═══ DOCUMENTS ═══ -->
+        <div class="report-section" id="sec-photos">
+
+            <!-- Annexure I -->
+            <div class="section-card">
+                <div class="section-heading">📷 Annexure-I: Photograph of Property
+                    <span style="font-size:0.8rem;font-weight:400;color:var(--gray-400);margin-left:8px;">Max 14 photos</span>
+                </div>
+                <div id="ebl-ann1-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
+                <label style="display:inline-flex;align-items:center;gap:8px;padding:0.6rem 1.2rem;background:var(--gray-100);border:2px dashed var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;color:var(--gray-600);" id="ebl-ann1-label">
+                    <span style="font-size:1.2rem;">📁</span> Choose Photos (up to 14)
+                    <input type="file" accept="image/*" multiple style="display:none;" onchange="eblHandlePhotos(this,'ebl-ann1-grid','ebl-ann1',14,'ebl-ann1-label',true)">
+                </label>
+                <p style="margin-top:0.5rem;font-size:0.75rem;color:var(--gray-400);">JPG, PNG. Max 14 photos, 2MB each.</p>
+            </div>
+
+            <!-- Annexure II -->
+            <div class="section-card">
+                <div class="section-heading">🗺️ Annexure-II: Hand Sketch Map</div>
+                <div class="form-group" style="margin-bottom:1.5rem;">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" data-field="annexure2_desc" rows="3" placeholder="Describe the hand sketch map..."></textarea>
+                </div>
+                <div id="ebl-ann2-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
+                <label style="display:inline-flex;align-items:center;gap:8px;padding:0.6rem 1.2rem;background:var(--gray-100);border:2px dashed var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;color:var(--gray-600);" id="ebl-ann2-label">
+                    <span style="font-size:1.2rem;">📁</span> Upload Sketch (1 image)
+                    <input type="file" accept="image/*" style="display:none;" onchange="eblHandlePhotos(this,'ebl-ann2-grid','ebl-ann2',1,'ebl-ann2-label',true)">
+                </label>
+            </div>
+
+            <!-- Annexure III -->
+            <div class="section-card">
+                <div class="section-heading">🗾 Annexure-III: Mouza Map</div>
+                <div class="form-group" style="margin-bottom:1.5rem;">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" data-field="annexure3_desc" rows="3" placeholder="Describe the mouza map..."></textarea>
+                </div>
+                <div id="ebl-ann3-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
+                <label style="display:inline-flex;align-items:center;gap:8px;padding:0.6rem 1.2rem;background:var(--gray-100);border:2px dashed var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;color:var(--gray-600);" id="ebl-ann3-label">
+                    <span style="font-size:1.2rem;">📁</span> Upload Mouza Map (1 image)
+                    <input type="file" accept="image/*" style="display:none;" onchange="eblHandlePhotos(this,'ebl-ann3-grid','ebl-ann3',1,'ebl-ann3-label',true)">
+                </label>
+            </div>
+
+            <!-- Annexure IV -->
+            <div class="section-card">
+                <div class="section-heading">📍 Annexure-IV: Location on Google Map</div>
+                <div class="form-group" style="margin-bottom:1.5rem;">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" data-field="annexure4_desc" rows="3" placeholder="Describe the location map..."></textarea>
+                </div>
+                <div id="ebl-ann4-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
+                <label style="display:inline-flex;align-items:center;gap:8px;padding:0.6rem 1.2rem;background:var(--gray-100);border:2px dashed var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;color:var(--gray-600);" id="ebl-ann4-label">
+                    <span style="font-size:1.2rem;">📁</span> Upload Location Maps (up to 2)
+                    <input type="file" accept="image/*" multiple style="display:none;" onchange="eblHandlePhotos(this,'ebl-ann4-grid','ebl-ann4',2,'ebl-ann4-label',true)">
+                </label>
+            </div>
+
+            <!-- Annexure V -->
+            <div class="section-card">
+                <div class="section-heading">📱 Annexure-V: QR Code for Video</div>
+                <p style="margin-bottom:1.5rem;color:var(--gray-600);font-size:0.875rem;">Upload the QR code image linking to the property video.</p>
+                <div id="ebl-ann5-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
+                <label style="display:inline-flex;align-items:center;gap:8px;padding:0.6rem 1.2rem;background:var(--gray-100);border:2px dashed var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;color:var(--gray-600);" id="ebl-ann5-label">
+                    <span style="font-size:1.2rem;">📁</span> Upload QR Code (1 image)
+                    <input type="file" accept="image/*" style="display:none;" onchange="eblHandlePhotos(this,'ebl-ann5-grid','ebl-ann5',1,'ebl-ann5-label',false)">
+                </label>
+            </div>
+
+            <!-- Annexure VI -->
+            <div class="section-card">
+                <div class="section-heading">🗺️ Annexure-VI: QR Code for Map</div>
+                <p style="margin-bottom:1.5rem;color:var(--gray-600);font-size:0.875rem;">Upload the QR code image linking to the property map.</p>
+                <div id="ebl-ann6-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
+                <label style="display:inline-flex;align-items:center;gap:8px;padding:0.6rem 1.2rem;background:var(--gray-100);border:2px dashed var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;color:var(--gray-600);" id="ebl-ann6-label">
+                    <span style="font-size:1.2rem;">📁</span> Upload QR Code (1 image)
+                    <input type="file" accept="image/*" style="display:none;" onchange="eblHandlePhotos(this,'ebl-ann6-grid','ebl-ann6',1,'ebl-ann6-label',false)">
+                </label>
+            </div>
+
+            <!-- Annexure VII -->
+            <div class="section-card">
+                <div class="section-heading">📄 Annexure-VII: SRO Mouza Value</div>
+                <p style="margin-bottom:1.5rem;color:var(--gray-600);font-size:0.875rem;">Upload the SRO Mouza Value document image.</p>
+                <div id="ebl-ann7-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
+                <label style="display:inline-flex;align-items:center;gap:8px;padding:0.6rem 1.2rem;background:var(--gray-100);border:2px dashed var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;color:var(--gray-600);" id="ebl-ann7-label">
+                    <span style="font-size:1.2rem;">📁</span> Upload Document (1 image)
+                    <input type="file" accept="image/*" style="display:none;" onchange="eblHandlePhotos(this,'ebl-ann7-grid','ebl-ann7',1,'ebl-ann7-label',false)">
+                </label>
+            </div>
+
+            <!-- Annexure VIII -->
+            <div class="section-card">
+                <div class="section-heading">🏙️ Annexure-VIII: Status In Area Master Plan</div>
+                <p style="margin-bottom:1.5rem;color:var(--gray-600);font-size:0.875rem;">Upload the Master Plan status image.</p>
+                <div id="ebl-ann8-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
+                <label style="display:inline-flex;align-items:center;gap:8px;padding:0.6rem 1.2rem;background:var(--gray-100);border:2px dashed var(--gray-200);border-radius:var(--radius-sm);cursor:pointer;font-size:0.875rem;color:var(--gray-600);" id="ebl-ann8-label">
+                    <span style="font-size:1.2rem;">📁</span> Upload Master Plan (1 image)
+                    <input type="file" accept="image/*" style="display:none;" onchange="eblHandlePhotos(this,'ebl-ann8-grid','ebl-ann8',1,'ebl-ann8-label',true)">
+                </label>
+            </div>
+            
+        </div>
+    </div><!-- end form-main -->
+</div><!-- end form-layout -->
+
+<div id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script src="ui.js"></script>
+<script src="core/db.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  EBL SME Land Form  —  Page logic
+//  Supabase save/load  → uses DB helpers from core/db.js
+// ═══════════════════════════════════════════════════════════
+
+// ── Section navigation ───────────────────────────────────
+function showSection(id, nav) {
+    document.querySelectorAll('.report-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.section-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (nav) nav.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Auto-fill surveyor ───────────────────────────────────
+function autoFillSurveyor() {
+    const sel = document.getElementById('surveyor-select');
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('sur-designation').value = opt.getAttribute('data-desig') || '';
+    document.getElementById('sur-nid').value         = opt.getAttribute('data-nid')   || '';
+    document.getElementById('sur-contact').value     = opt.getAttribute('data-contact')|| '';
+    document.querySelector('[data-field="surveyor_designation"]').value = opt.getAttribute('data-desig') || '';
+    document.querySelector('[data-field="surveyor_nid"]').value         = opt.getAttribute('data-nid')   || '';
+    document.querySelector('[data-field="surveyor_contact"]').value     = opt.getAttribute('data-contact')|| '';
+    setSaveStatus('unsaved');
+}
+
+// ── Auto-fill reporter / reviewer ────────────────────────
+function autoFillValuer(num) {
+    const sel   = document.getElementById(`valuer${num}-select`);
+    const opt   = sel.options[sel.selectedIndex];
+    const desig = opt.getAttribute('data-desig') || '';
+    document.getElementById(`valuer${num}-desig`).value                      = desig;
+    document.querySelector(`[data-field="valuer_${num}_designation"]`).value  = desig;
+    setSaveStatus('unsaved');
+}
+
+// ── Valuation table calculations ─────────────────────────
+function getRaw(field) {
+    const el = document.querySelector(`[data-field="${field}"]`);
+    return el ? parseFloat(el.value.replace(/,/g, '')) || 0 : 0;
+}
+
+function setField(field, val) {
+    const el = document.querySelector(`[data-field="${field}"]`);
+    if (el) el.value = val;
+}
+
+function fmtN(n) {
+    return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function fmtAndCalc(input) {
+    const v = input.value.replace(/[^0-9]/g, '');
+    if (v) input.value = parseInt(v).toLocaleString();
+    calculateValuation();
+}
+
+function calculateValuation() {
+    const mArea = getRaw('market_land_area');
+    const mRate = getRaw('market_rate');
+    const mLand = mArea * mRate;
+    setField('market_land_val', fmtN(mLand));
+
+    // Forced sale = 80% of market
+    setField('forced_land_area', mArea || '');
+    setField('forced_rate',      fmtN(mRate * 0.8));
+    setField('forced_land_val',  fmtN(mLand * 0.8));
+
+    // Mouza value
+    setField('mouza_land_area', mArea || '');
+    const zRate = getRaw('mouza_rate');
+    setField('mouza_land_val', fmtN(mArea * zRate));
+}
+
+// ── Photo upload ─────────────────────────────────────────
+const eblPhotoStores = {
+    'ebl-ann1': [], 'ebl-ann2': [], 'ebl-ann3': [], 'ebl-ann4': [],
+    'ebl-ann5': [], 'ebl-ann6': [], 'ebl-ann7': [], 'ebl-ann8': [],
+};
+
+function eblHandlePhotos(input, gridId, storeKey, maxCount, labelId, hasCaption) {
+    const store = eblPhotoStores[storeKey];
+    const rem   = maxCount - store.length;
+    Array.from(input.files).slice(0, rem).forEach(file => {
+        if (file.size > 50 * 1024 * 1024) { UI.showToast(`${file.name} too large`, 'error'); return; }
+        const reader = new FileReader();
+        reader.onload = e => {
+            store.push({ name: file.name, caption: file.name.replace(/\.[^/.]+$/, ''), dataUrl: e.target.result });
+            eblRenderPhotos(gridId, storeKey, maxCount, labelId, hasCaption);
+            setSaveStatus('unsaved');
+        };
+        reader.readAsDataURL(file);
+    });
+    input.value = '';
+}
+
+function eblRenderPhotos(gridId, storeKey, maxCount, labelId, hasCaption) {
+    const store = eblPhotoStores[storeKey];
+    document.getElementById(gridId).innerHTML = store.map((p, i) => `
+        <div style="border-radius:var(--radius-sm);border:1px solid var(--gray-200);overflow:hidden;display:flex;flex-direction:column;">
+            <div style="position:relative;aspect-ratio:4/3;">
+                <img src="${p.dataUrl}" style="width:100%;height:100%;object-fit:cover;">
+                <button onclick="eblRemovePhoto('${gridId}','${storeKey}',${maxCount},'${labelId}',${hasCaption},${i})"
+                    style="position:absolute;top:4px;right:4px;background:rgba(220,38,38,0.9);color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">×</button>
+            </div>
+            ${hasCaption ? `
+            <div style="padding:4px 6px;background:#f9f9f9;border-top:1px solid var(--gray-200);">
+                <input type="text" value="${p.caption}" placeholder="Caption"
+                    onchange="eblPhotoStores['${storeKey}'][${i}].caption=this.value;setSaveStatus('unsaved');"
+                    style="width:100%;font-size:0.75rem;border:none;background:transparent;outline:none;color:#333;">
+            </div>` : ''}
+        </div>`).join('');
+    const lbl = document.getElementById(labelId);
+    if (lbl) lbl.style.display = store.length >= maxCount ? 'none' : 'inline-flex';
+}
+
+function eblRemovePhoto(gridId, storeKey, maxCount, labelId, hasCaption, i) {
+    eblPhotoStores[storeKey].splice(i, 1);
+    eblRenderPhotos(gridId, storeKey, maxCount, labelId, hasCaption);
+    setSaveStatus('unsaved');
+}
+
+// ── Collect form data ─────────────────────────────────────
+function collectFormData() {
+    const data = {};
+    document.querySelectorAll('[data-field]').forEach(el => { data[el.dataset.field] = el.value; });
+
+    data._ann1_photos = eblPhotoStores['ebl-ann1'];
+    data._ann2_photos = eblPhotoStores['ebl-ann2'];
+    data._ann3_photos = eblPhotoStores['ebl-ann3'];
+    data._ann4_photos = eblPhotoStores['ebl-ann4'];
+    data._ann5_photos = eblPhotoStores['ebl-ann5'];
+    data._ann6_photos = eblPhotoStores['ebl-ann6'];
+    data._ann7_photos = eblPhotoStores['ebl-ann7'];
+    data._ann8_photos = eblPhotoStores['ebl-ann8'];
+    data._formType = 'ebl-sme-land';
+    return data;
+}
+
+// ── Populate form data ────────────────────────────────────
+function populateFormData(fd) {
+    if (!fd) return;
+
+    // Restore all simple data-field inputs
+    document.querySelectorAll('[data-field]').forEach(el => {
+        if (fd[el.dataset.field] !== undefined) el.value = fd[el.dataset.field];
+    });
+
+    // Restore surveyor select
+    const surSel = document.getElementById('surveyor-select');
+    if (surSel && fd.surveyor_name) {
+        surSel.value = fd.surveyor_name;
+        autoFillSurveyor();
+    }
+
+    // Restore reporter / reviewer selects
+    [1, 2].forEach(num => {
+        const sel = document.getElementById(`valuer${num}-select`);
+        if (sel && fd[`valuer_${num}_name`]) {
+            sel.value = fd[`valuer_${num}_name`];
+            autoFillValuer(num);
+        }
+    });
+
+    // Restore photo annexures
+    [
+        ['ebl-ann1', 'ebl-ann1-grid', 14, 'ebl-ann1-label', true,  '_ann1_photos'],
+        ['ebl-ann2', 'ebl-ann2-grid',  1, 'ebl-ann2-label', true,  '_ann2_photos'],
+        ['ebl-ann3', 'ebl-ann3-grid',  1, 'ebl-ann3-label', true,  '_ann3_photos'],
+        ['ebl-ann4', 'ebl-ann4-grid',  2, 'ebl-ann4-label', true,  '_ann4_photos'],
+        ['ebl-ann5', 'ebl-ann5-grid',  1, 'ebl-ann5-label', false, '_ann5_photos'],
+        ['ebl-ann6', 'ebl-ann6-grid',  1, 'ebl-ann6-label', false, '_ann6_photos'],
+        ['ebl-ann7', 'ebl-ann7-grid',  1, 'ebl-ann7-label', false, '_ann7_photos'],
+        ['ebl-ann8', 'ebl-ann8-grid',  1, 'ebl-ann8-label', true,  '_ann8_photos'],
+    ].forEach(([storeKey, gridId, max, labelId, hasCaption, fdKey]) => {
+        if (Array.isArray(fd[fdKey])) {
+            eblPhotoStores[storeKey] = fd[fdKey].map(p => ({
+                ...p, caption: p.caption ?? p.name.replace(/\.[^/.]+$/, '')
+            }));
+            eblRenderPhotos(gridId, storeKey, max, labelId, hasCaption);
+        }
+    });
+
+    // Re-run valuation calculations so readonly fields are correct
+    calculateValuation();
+}
+
+// ── Save status ───────────────────────────────────────────
+function setSaveStatus(s) {
+    const dot = document.getElementById('save-dot');
+    const txt = document.getElementById('save-status');
+    dot.className = 'save-dot';
+    if (s === 'saving') { dot.classList.add('saving'); txt.textContent = 'Saving...'; }
+    if (s === 'saved')  { dot.classList.add('saved');  txt.textContent = 'Saved'; }
+    if (s === 'unsaved') txt.textContent = 'Unsaved changes';
+}
+
+// ── Main init ─────────────────────────────────────────────
+let currentUserId = null, currentSubmissionId = null;
+
+async function init() {
+    const session = await Auth.requireAuth();
+    if (!session) return;
+    currentUserId = session.user.id;
+
+    const params = new URLSearchParams(window.location.search);
+    const subId  = params.get('id');
+    if (subId) {
+        try {
+            const sub = await DB.getSubmission(subId);
+            currentSubmissionId = sub.id;
+            populateFormData(sub.form_data);
+            const badge = document.getElementById('status-indicator');
+            badge.style.display = 'inline-flex';
+            badge.className     = `status-badge status-${sub.status}`;
+            badge.textContent   = sub.status.charAt(0).toUpperCase() + sub.status.slice(1);
+            const fd    = sub.form_data || {};
+            const title = [fd.reference_account_name, fd.reference_no].filter(Boolean).join(' – ');
+            if (title) document.getElementById('form-title').textContent = title;
+            setSaveStatus('saved');
+        } catch (err) {
+            UI.showToast('Failed to load: ' + err.message, 'error');
+        }
+    }
+
+    document.addEventListener('input',  () => setSaveStatus('unsaved'));
+    document.addEventListener('change', () => setSaveStatus('unsaved'));
+    setInterval(() => {
+        if (document.getElementById('save-status').textContent === 'Unsaved changes') saveDraft();
+    }, 90000);
+}
+
+async function saveDraft() {
+    setSaveStatus('saving');
+    try {
+        const sub = await DB.saveDraft(currentUserId, collectFormData(), currentSubmissionId);
+        currentSubmissionId = sub.id;
+        history.replaceState({}, '', `ebl-sme-land-form.html?id=${currentSubmissionId}`);
+        setSaveStatus('saved');
+        UI.showToast('Draft saved', 'success', 2000);
+    } catch (err) {
+        setSaveStatus('unsaved');
+        UI.showToast('Save failed: ' + err.message, 'error');
+    }
+}
+
+async function submitReport() {
+    if (!confirm('Submit this report?')) return;
+    setSaveStatus('saving');
+    try {
+        const sub = await DB.submitReport(currentUserId, collectFormData(), currentSubmissionId);
+        currentSubmissionId = sub.id;
+        history.replaceState({}, '', `ebl-sme-land-form.html?id=${currentSubmissionId}`);
+        const badge = document.getElementById('status-indicator');
+        badge.style.display = 'inline-flex';
+        badge.className     = 'status-badge status-submitted';
+        badge.textContent   = 'Submitted';
+        setSaveStatus('saved');
+        UI.showToast('Report submitted!', 'success');
+    } catch (err) {
+        setSaveStatus('unsaved');
+        UI.showToast('Submit failed: ' + err.message, 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
