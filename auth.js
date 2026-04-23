@@ -17,9 +17,6 @@ const Auth = {
 
     // Use for regular user pages (form, dashboard)
     async requireAuth(redirectTo = 'index.html') {
-        if (db.authStore.isValid) {
-            try { await db.collection('users').authRefresh(); } catch(e) {}
-        }
         const user = this.getSession();
         if (!user) { window.location.href = redirectTo; return null; }
         return user;
