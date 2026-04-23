@@ -6,6 +6,9 @@
     <title>AMK Advisory – Car Valuation Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        body { visibility: hidden; }
+    </style>
+    <style>
         :root {
             --navy:#0d1b2a;--navy-mid:#1b2d42;--gold:#c9a84c;--gold-light:#e8c97a;
             --cream:#faf6f0;--white:#ffffff;--gray-100:#f4f6f8;--gray-200:#e8edf2;
@@ -212,7 +215,11 @@ async function handleRegister() {
 
 // ── REDIRECT IF ALREADY LOGGED IN ────────────────────────────
 window.addEventListener('load', function() {
-    if (db.authStore.isValid) window.location.href = 'dashboard.html';
+    if (db.authStore.isValid) {
+        window.location.replace('dashboard.html');
+    } else {
+        document.body.style.visibility = 'visible';
+    }
 });
 
 // ── ENTER KEY SUPPORT ────────────────────────────────────────
